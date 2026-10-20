@@ -52,7 +52,8 @@ enum AnisetteProvider {
                 // not an Apple Account password error. Try the next existing
                 // Anisette server instead of aborting the entire login.
                 // The stored ADI blob changes only after a successful fetch.
-                if String(describing: error).localizedCaseInsensitiveContains("Sierra provisioning data must be an ADIB bundle") {
+                let details = String(describing: error) + " " + error.localizedDescription
+                if details.localizedCaseInsensitiveContains("Sierra provisioning data must be an ADIB bundle") {
                     debugLog("[AnisetteProvider] Invalid ADIB response; attempting next configured server.")
                     return true
                 }
