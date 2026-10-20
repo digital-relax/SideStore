@@ -86,13 +86,13 @@ final class PairingFileManager: NSObject {
         let fileURL = pairingFileURL(for: mode)
         let fm = FileManager.default
         if fm.fileExists(atPath: fileURL.path),
-           let contents = try? String(contentsOf: fileURL), !contents.isEmpty 
+           let contents = try? String(contentsOf: fileURL), !contents.isEmpty
         {
             return contents
         }
         return nil
     }
-    
+
     nonisolated func sanitizePairingFileFor(contents: String, pprotocol: PairingProtocol) -> String {
         guard let plistData = contents.data(using: .utf8) else {
             return contents
@@ -100,7 +100,7 @@ final class PairingFileManager: NSObject {
         guard let plist = try? PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String : Sendable] else {
             return contents
         }
-        
+
         let requiredKeys: [String]
         if pprotocol == .rppairing {
             requiredKeys = [
@@ -124,11 +124,11 @@ final class PairingFileManager: NSObject {
         } else {
             return contents
         }
-        
+
         if !(requiredKeys.filter { plist[$0] == nil }.isEmpty) {
             return contents
         }
-    
+
         var ansDict : [String : Sendable] = [:]
         for key in requiredKeys {
             ansDict[key] = plist[key]
@@ -160,7 +160,7 @@ final class PairingFileManager: NSObject {
         }
         return nil
     }
-    
+
     @discardableResult
     nonisolated func parse(content: String, preferred: PairingProtocol? = nil) throws -> any PairingFile {
         try PairingFileParser.parse(content: content, preferred: preferred)
