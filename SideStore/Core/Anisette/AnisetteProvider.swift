@@ -35,13 +35,27 @@ enum AnisetteProvider {
         let identifier = await AnisetteConfigManager.shared.resolveDeviceIdentifier()
         let headers = await AnisetteConfigManager.shared.makeRequestHeaders()
 
+        // A pinned server starts at index zero even if the selected server
+        // occurs later in the full list.
+        let rotationDisabled = UserDefaults.standard.disableAnisetteRotation
+        let candidates = rotationDisabled ? [servers[startIndex]] : servers
+        let candidateStartIndex = rotationDisabled ? 0 : startIndex
+
         let (anisetteData, newAdiBlob) = try await provider.fetchAnisetteDataWithFailover(
-            servers: UserDefaults.standard.disableAnisetteRotation ? [servers[startIndex]] : servers,
-            startIndex: startIndex,
+            servers: candidates,
+            startIndex: candidateStartIndex,
             identifier: identifier,
             existingAdiBlob: existingBlob,
             headers: headers,
             onError: { error in
+                // A malformed ADIB response is a remote provisioning problem,
+                // not an Apple Account password error. Try the next existing
+                // Anisette server instead of aborting the entire login.
+                // The stored ADI blob changes only after a successful fetch.
+                if String(describing: error).localizedCaseInsensitiveContains("Sierra provisioning data must be an ADIB bundle") {
+                    debugLog("[AnisetteProvider] Invalid ADIB response; attempting next configured server.")
+                    return true
+                }
                 if let anisetteError = error as? SideSign.AnisetteError,
                    case .outdatedV1Server(let serverURL, _) = anisetteError {
                     if UserDefaults.standard.defaultServerURL == serverURL.absoluteString {
