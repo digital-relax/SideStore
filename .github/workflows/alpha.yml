@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: xcode-27
+    runs-on: macos-26
     env:
       DEPLOY_KEY: ${{ secrets.CROSS_REPO_PUSH_KEY }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -63,7 +63,7 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1.6.0
         with:
-          xcode-version: "27.2"
+          xcode-version: "26.4"
 
       - name: Restore Cache (exact)
         id: xcode-cache-exact
@@ -177,51 +177,3 @@ jobs:
         with:
           name: SideStore-${{ env.MARKETING_VERSION }}-dSYMs.zip
           path: SideStore.dSYMs.zip
-
-      - uses: actions/checkout@v4
-        if: env.DEPLOY_KEY != ''
-        with:
-          repository: "SideStore/apps-v2.json"
-          ref: "main"
-          token: ${{ secrets.CROSS_REPO_PUSH_KEY }}
-          path: "SideStore/apps-v2.json"
-
-      - name: Generate Metadata
-        run: |
-          python3 scripts/ci/workflow.py dump-project-settings
-          PRODUCT_NAME=$(python3 scripts/ci/workflow.py read-product-name)
-          BUNDLE_ID=$(python3 scripts/ci/workflow.py read-bundle-id)
-          IPA_NAME="$PRODUCT_NAME.ipa"
-
-          python3 scripts/ci/workflow.py generate-metadata \
-            "$CHANNEL" \
-            "$SHORT_COMMIT" \
-            "$MARKETING_VERSION" \
-            "$CHANNEL" \
-            "$BUNDLE_ID" \
-            "$IPA_NAME" \
-            "$LAST_SUCCESSFUL_COMMIT"
-
-      - name: Deploy
-        if: env.DEPLOY_KEY != ''
-        run: |
-          SOURCE_JSON="_includes/source.json"
-
-          python3 scripts/ci/workflow.py deploy \
-            SideStore/apps-v2.json \
-            "$SOURCE_JSON" \
-            "$CHANNEL" \
-            "$MARKETING_VERSION"
-      
-
-      # --------------------------------------------------
-      # upload release to GH
-      # --------------------------------------------------
-      - name: Upload Release
-        run: |
-          python3 scripts/ci/workflow.py upload-release \
-            "$RELEASE_NAME" \
-            "$CHANNEL" \
-            "$GITHUB_SHA" \
-            "$GITHUB_REPOSITORY" \
-            "$UPSTREAM_CHANNEL"
